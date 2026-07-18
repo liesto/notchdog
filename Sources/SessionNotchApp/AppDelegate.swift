@@ -13,12 +13,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dir = home.appendingPathComponent(".sessionnotch")
-        let secret = (try? Secret.loadOrCreate(at: dir.appendingPathComponent("secret"))) ?? ""
 
         store = RegistryStore()
         store.onNewAttention = { Notifier.notify($0) }
         statusController = StatusItemController(store: store)
 
+        guard let secret = try? Secret.loadOrCreate(at: dir.appendingPathComponent("secret")),
+              !secret.isEmpty else {
+            NSLog("SessionNotch: could not load or generate a secret; event server NOT started")
+            return
+        }
         server = EventServer(port: 47823, secret: secret) { [weak self] event in
             self?.store.apply(event)
         }

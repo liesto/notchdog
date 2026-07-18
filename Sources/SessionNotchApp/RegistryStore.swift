@@ -13,7 +13,10 @@ public final class RegistryStore: ObservableObject {
         registry.onChange = { [weak self] in self?.refresh() }
         registry.onNewAttention = { [weak self] s in self?.onNewAttention?(s) }
         Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            self?.registry.expireStale(now: Date()); self?.refresh()
+            Task { @MainActor in
+                self?.registry.expireStale(now: Date())
+                self?.refresh()
+            }
         }
     }
 

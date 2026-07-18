@@ -2,8 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="${1:-release}"
-swift build -c "$CONFIG"
-BIN="$(swift build -c "$CONFIG" --show-bin-path)/SessionNotch"
+swift build -c "$CONFIG" --product SessionNotch
+BIN="$(swift build -c "$CONFIG" --product SessionNotch --show-bin-path)/SessionNotch"
 APP="$ROOT/build/SessionNotch.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
