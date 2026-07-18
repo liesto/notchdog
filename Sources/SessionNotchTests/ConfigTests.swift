@@ -7,7 +7,7 @@ private func tempURL() -> URL {
 }
 
 func registerConfigTests(_ runner: TestRunner) async {
-    runner.test("Config.testLoadConfig") {
+    runner.test("Config.loadConfig") {
         let url = tempURL()
         defer { try? FileManager.default.removeItem(at: url) }
         try #"{"machine":"laptop","endpoint":"http://127.0.0.1:47823/event","port":47823}"#
@@ -17,7 +17,7 @@ func registerConfigTests(_ runner: TestRunner) async {
         try expectEqual(c.port, 47823)
     }
 
-    runner.test("Secret.testSecretCreatedWith0600") {
+    runner.test("Secret.createdWith0600") {
         let url = tempURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let s1 = try Secret.loadOrCreate(at: url)
@@ -28,7 +28,7 @@ func registerConfigTests(_ runner: TestRunner) async {
         try expectEqual(s1, s2)
     }
 
-    runner.test("TailscaleIP.testIsCGNAT") {
+    runner.test("TailscaleIP.isCGNAT") {
         try expect(TailscaleIP.isCGNAT("100.90.12.34"))
         try expect(TailscaleIP.isCGNAT("100.127.0.1"))
         try expect(!TailscaleIP.isCGNAT("192.168.1.10"))
