@@ -104,8 +104,21 @@ public final class EventServer {
         handler?(state)
     }
 
+    /// Max time a connection may sit open without completing a request. Guards against a
+    /// client opening a socket and never sending/finishing a request, which would otherwise
+    /// leak the connection forever.
+    private static let connectionIdleTimeout: TimeInterval = 15
+    /// Max bytes buffered per connection while waiting for a complete request. Guards against
+    /// an unbounded body (or a client that never terminates headers) growing memory forever.
+    private static let maxRequestBytes = 1 << 20 // 1 MiB
+
     private func handle(_ conn: NWConnection) {
         conn.start(queue: queue)
+        // Cancelling an already-finished/closed connection is a safe no-op, so an unconditional
+        // cancel after the idle timeout is enough to bound a stuck/slow-loris-style client.
+        queue.asyncAfter(deadline: .now() + Self.connectionIdleTimeout) { [weak conn] in
+            conn?.cancel()
+        }
         receive(conn, buffer: Data())
     }
 
@@ -122,6 +135,10 @@ public final class EventServer {
                 conn.cancel()
                 return
             }
+            if buffer.count > Self.maxRequestBytes {
+                conn.cancel()
+                return
+            }
             self.receive(conn, buffer: buffer)
         }
     }
@@ -130,9 +147,12 @@ public final class EventServer {
         let (status, reason): (Int, String)
         if req.method == "GET", req.path == "/health" {
             (status, reason) = (200, "OK")
-        } else if req.path != "/event" {
+        } else if !(req.method == "POST" && req.path == "/event") {
             (status, reason) = (404, "Not Found")
         } else if req.headers["x-sessionnotch-secret"] != secret {
+            // Plain `!=` is not constant-time, but this is a conscious, acceptable tradeoff:
+            // the server only ever runs behind a trusted tailnet, guarded by a 256-bit random
+            // secret, so a timing side-channel isn't a meaningful attack surface here.
             (status, reason) = (401, "Unauthorized")
         } else if let event = try? Event.decoder.decode(Event.self, from: req.body) {
             DispatchQueue.main.async { self.onEvent(event) }
