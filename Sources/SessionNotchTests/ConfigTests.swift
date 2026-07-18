@@ -28,6 +28,17 @@ func registerConfigTests(_ runner: TestRunner) async {
         try expectEqual(s1, s2)
     }
 
+    runner.test("Secret.tightensExistingFilePermissions") {
+        let url = tempURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        try "deadbeef".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        let s = try Secret.loadOrCreate(at: url)
+        try expectEqual(s, "deadbeef")
+        let perms = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? NSNumber
+        try expectEqual(perms?.int16Value, 0o600)
+    }
+
     runner.test("TailscaleIP.isCGNAT") {
         try expect(TailscaleIP.isCGNAT("100.90.12.34"))
         try expect(TailscaleIP.isCGNAT("100.127.0.1"))
