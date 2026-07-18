@@ -37,4 +37,14 @@ func registerHTTPRequestTests(_ runner: TestRunner) async {
             _ = try HTTPRequest.parse(Data("GARBAGE\r\n\r\n".utf8))
         }
     }
+
+    runner.test("HTTPRequest.negativeContentLengthThrows") {
+        let raw = "POST /event HTTP/1.1\r\nContent-Length: -1\r\n\r\nhello"
+        try expectThrows { _ = try HTTPRequest.parse(Data(raw.utf8)) }
+    }
+
+    runner.test("HTTPRequest.nonNumericContentLengthThrows") {
+        let raw = "POST /event HTTP/1.1\r\nContent-Length: abc\r\n\r\n"
+        try expectThrows { _ = try HTTPRequest.parse(Data(raw.utf8)) }
+    }
 }

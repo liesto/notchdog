@@ -34,7 +34,13 @@ public struct HTTPRequest {
             headers[name] = value
         }
 
-        let contentLength = Int(headers["content-length"] ?? "0") ?? 0
+        let contentLength: Int
+        if let raw = headers["content-length"] {
+            guard let n = Int(raw), n >= 0 else { throw ParseError.malformed }
+            contentLength = n
+        } else {
+            contentLength = 0
+        }
         let bodyStart = sepRange.upperBound
         let available = data.distance(from: bodyStart, to: data.endIndex)
         if available < contentLength { return nil } // body incomplete
