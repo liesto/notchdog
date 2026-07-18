@@ -7,5 +7,6 @@ await registerEventTests(runner)
 await registerSessionRegistryTests(runner)
 await registerHTTPRequestTests(runner)
 await registerConfigTests(runner)
+await registerEventServerTests(runner)
 
 runner.finish()
