@@ -9,3 +9,6 @@ xcuserdata/
 DerivedData/
 .build/
 build/
+
+# SDD scratch (ledger, briefs, reports)
+.superpowers/

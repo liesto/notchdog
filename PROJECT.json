@@ -1,0 +1,20 @@
+{
+  "title": "SessionNotch",
+  "description": "macOS notch app showing Claude Code sessions needing attention across laptop + Studio",
+  "group": "Personal",
+  "stage": "building",
+  "tags": ["macos", "swift", "claude-code", "tooling"],
+  "completed": [
+    "Core library (Event, SessionRegistry, HTTP parser, Config/Secret/Tailscale, NWListener EventServer) built + tested (28 tests)",
+    "Bash Claude Code hook client + idempotent install script + hook tests (6 cases)",
+    "Menu-bar baseline app (status item, popover, notifier, server wiring) + make-app.sh bundling",
+    "All Studio-buildable tasks reviewed; final whole-branch review: ready to merge"
+  ],
+  "next": [
+    "LAPTOP: build+run on macOS with Xcode; do Task 6 GUI smoke test (curl event -> badge/banner)",
+    "LAPTOP: Task 7 - add DynamicNotchKit notch overlay (needs full Xcode)",
+    "LAPTOP: Task 9 - cross-machine install + end-to-end verification",
+    "Post-merge follow-ups (see HANDOFF.md): sub-second ts, 400 on malformed HTTP, EventServer empty-secret guard, install-hooks .command type-safety"
+  ],
+  "updatedAt": "2026-07-18"
+}

@@ -20,6 +20,7 @@ Every task's requirements implicitly include these:
 - **No emoji** in code, scripts, or committed output. (Color/glyph in UI is fine via SF Symbols / SwiftUI colors.)
 - **Git:** author email `jbw@buildabonfire.com`; work on feature branch `feat/sessionnotch-v1` (create it before Task 1); small scoped commits per task.
 - **Event kinds** (the wire vocabulary, used verbatim everywhere): `waiting_permission`, `idle`, `done`, `working`, `error`, `session_end`.
+- **Testing convention (supersedes XCTest in every task):** This machine has Command Line Tools only — the `XCTest` and `Testing` modules are absent, so `swift test` cannot run. Tests are instead a plain executable target `SessionNotchTests` (`Sources/SessionNotchTests/`, depends on `SessionNotchCore`), run via `swift run SessionNotchTests [name-substring-filter]`. It uses the in-repo harness (`TestHarness.swift`, defined in Task 1) exposing `TestRunner` (with sync `test(_:_:)` and async `test(_:_:) async`, `finish() -> Never` exiting nonzero on any failure) and free functions `expect(_:_:)`, `expectEqual(_:_:)`, `expectThrows(_:_:)` that throw `ExpectationError`. The XCTest `func testX { XCTAssert... }` blocks shown throughout this plan are the **test specification**: translate each into a `runner.test("testX") { try expect... }` call with the identical assertions. RED = run before implementing and see the failure; GREEN = run after and see `N passed, 0 failed`.
 
 ---
 
