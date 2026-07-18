@@ -4,5 +4,6 @@ let filter = CommandLine.arguments.dropFirst().first
 let runner = TestRunner(filter: filter)
 
 await registerEventTests(runner)
+await registerSessionRegistryTests(runner)
 
 runner.finish()
