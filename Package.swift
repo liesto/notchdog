@@ -8,16 +8,12 @@ let package = Package(
         .library(name: "SessionNotchCore", targets: ["SessionNotchCore"]),
         .executable(name: "SessionNotch", targets: ["SessionNotchApp"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/MrKai77/DynamicNotchKit", from: "1.0.0"),
-    ],
     targets: [
         .target(name: "SessionNotchCore"),
         .executableTarget(
             name: "SessionNotchApp",
             dependencies: [
                 "SessionNotchCore",
-                .product(name: "DynamicNotchKit", package: "DynamicNotchKit"),
             ]
         ),
         .executableTarget(name: "SessionNotchTests", dependencies: ["SessionNotchCore"]),
