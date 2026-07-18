@@ -32,25 +32,40 @@ private func getFromTestServer(_ path: String, secret: String?,
 /// Races event delivery (via `start`'s callback) against a bounded timeout, so a future
 /// regression that never calls `onEvent` fails the test cleanly instead of hanging the whole
 /// test binary forever.
+///
+/// Deliberately NOT implemented with `withThrowingTaskGroup` + a sibling `Task.sleep` task:
+/// if delivery never happens, the group still has to await the orphaned
+/// `withCheckedThrowingContinuation` child task, which never resumes — so the whole test binary
+/// hangs (Swift reports "SWIFT TASK CONTINUATION MISUSE"). That only helps when delivery is
+/// slow, not when it never happens, which is the exact regression this guards against. Instead,
+/// a single continuation is resumed at most once by whichever of the delivery callback or the
+/// `DispatchQueue.asyncAfter` timer fires first; the loser of the race is dropped harmlessly.
 private func awaitDelivery(timeout: TimeInterval = 3,
-                            start: @escaping (@escaping (Event) -> Void) -> Void) async throws -> Event {
-    try await withThrowingTaskGroup(of: Event.self) { group in
-        group.addTask {
-            try await withCheckedThrowingContinuation { cont in
-                start { cont.resume(returning: $0) }
-            }
+                            start: (@escaping (Event) -> Void) -> Void) async throws -> Event {
+    final class Box { var resumed = false; let lock = NSLock() }
+    let box = Box()
+    return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Event, Error>) in
+        func finish(_ result: Result<Event, Error>) {
+            box.lock.lock(); defer { box.lock.unlock() }
+            guard !box.resumed else { return }
+            box.resumed = true
+            cont.resume(with: result)
         }
-        group.addTask {
-            try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-            throw ExpectationError(description: "timed out waiting for event delivery")
+        start { finish(.success($0)) }
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+            finish(.failure(ExpectationError(description: "timed out waiting for event delivery")))
         }
-        let result = try await group.next()!
-        group.cancelAll()
-        return result
     }
 }
 
 func registerEventServerTests(_ runner: TestRunner) async {
+    await runner.test("EventServer.awaitDeliveryTimesOut") {
+        var threw = false
+        do { _ = try await awaitDelivery(timeout: 1) { _ in /* never fires */ } }
+        catch { threw = true }
+        try expect(threw, "awaitDelivery must throw when delivery never happens")
+    }
+
     await runner.test("EventServer.validEventIsDelivered") {
         final class Box: @unchecked Sendable {
             private var deliver: ((Event) -> Void)?
