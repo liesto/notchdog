@@ -5,5 +5,6 @@ let runner = TestRunner(filter: filter)
 
 await registerEventTests(runner)
 await registerSessionRegistryTests(runner)
+await registerHTTPRequestTests(runner)
 
 runner.finish()
