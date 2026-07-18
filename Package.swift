@@ -20,6 +20,6 @@ let package = Package(
                 .product(name: "DynamicNotchKit", package: "DynamicNotchKit"),
             ]
         ),
-        .testTarget(name: "SessionNotchCoreTests", dependencies: ["SessionNotchCore"]),
+        .executableTarget(name: "SessionNotchTests", dependencies: ["SessionNotchCore"]),
     ]
 )

@@ -1,0 +1,8 @@
+import Foundation
+
+let filter = CommandLine.arguments.dropFirst().first
+let runner = TestRunner(filter: filter)
+
+await registerEventTests(runner)
+
+runner.finish()
