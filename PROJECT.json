@@ -1,0 +1,10 @@
+{
+  "title": "SessionNotch",
+  "description": "macOS notch app showing Claude Code sessions needing attention across laptop + Studio",
+  "group": "Personal",
+  "stage": "building",
+  "tags": ["macos", "swift", "claude-code", "tooling"],
+  "completed": [],
+  "next": ["Implement per docs/superpowers/plans/2026-07-18-sessionnotch.md"],
+  "updatedAt": "2026-07-18"
+}
