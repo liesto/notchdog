@@ -11,8 +11,9 @@ sn_post() {
   [ -f "$cfg" ] && [ -f "$secret_file" ] || exit 0   # not configured: no-op
 
   local endpoint machine secret
-  endpoint=$(jq -r '.endpoint' "$cfg")
-  machine=$(jq -r '.machine' "$cfg")
+  endpoint=$(jq -r '.endpoint // empty' "$cfg" 2>/dev/null || true)
+  machine=$(jq -r '.machine // empty' "$cfg" 2>/dev/null || true)
+  [ -n "$endpoint" ] && [ -n "$machine" ] || exit 0   # malformed config: no-op
   secret=$(cat "$secret_file")
 
   local session cwd project ts
@@ -27,6 +28,9 @@ sn_post() {
     '{machine:$m, session_id:$s, project:$p, cwd:$c, event:$e,
       message:(if $msg=="" then null else $msg end), ts:$t}')
 
-  curl -s --max-time 2 -X POST "$endpoint" \
-    -H "X-SessionNotch-Secret: $secret" -d "$payload" >/dev/null 2>&1 || true
+  # Pass the secret via a stdin curl config (-K -) rather than -H on argv, so
+  # it never appears in `ps` output visible to other local users. Only the
+  # non-secret URL/payload stay on argv.
+  printf 'header = "X-SessionNotch-Secret: %s"\n' "$secret" \
+    | curl -s --max-time 2 -K - -X POST "$endpoint" --data "$payload" >/dev/null 2>&1 || true
 }

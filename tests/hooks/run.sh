@@ -71,3 +71,7 @@ assert_kind sessionnotch-end.sh    end-normal.json               session_end    
 
 rm -rf "$TMP"
 echo "all hook tests passed"
+
+# Also verify hooks/install-hooks.sh is idempotent (runs against a throwaway
+# HOME, never the real ~/.claude/settings.json -- see the script itself).
+bash "$ROOT/tests/hooks/test-install-idempotency.sh"

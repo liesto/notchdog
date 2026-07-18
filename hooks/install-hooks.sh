@@ -27,10 +27,14 @@ STOP=$(hook "$HOOKS_DIR/sessionnotch-stop.sh")
 PROMPT=$(hook "$HOOKS_DIR/sessionnotch-prompt.sh")
 END=$(hook "$HOOKS_DIR/sessionnotch-end.sh")
 
+# Idempotent: strip any existing entries whose command references a
+# sessionnotch hook script before appending the fresh one, so re-running this
+# script (e.g. to pick up a new endpoint) never duplicates entries/POSTs.
 jq --argjson n "$NOTIFY" --argjson s "$STOP" --argjson p "$PROMPT" --argjson e "$END" '
-  .hooks.Notification = ((.hooks.Notification // []) + [$n]) |
-  .hooks.Stop = ((.hooks.Stop // []) + [$s]) |
-  .hooks.UserPromptSubmit = ((.hooks.UserPromptSubmit // []) + [$p]) |
-  .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [$e])
+  def strip($arr): [ ($arr // [])[] | select((.hooks // []) | any(.command | test("sessionnotch")) | not) ];
+  .hooks.Notification = (strip(.hooks.Notification) + [$n]) |
+  .hooks.Stop = (strip(.hooks.Stop) + [$s]) |
+  .hooks.UserPromptSubmit = (strip(.hooks.UserPromptSubmit) + [$p]) |
+  .hooks.SessionEnd = (strip(.hooks.SessionEnd) + [$e])
 ' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
 echo "Installed hooks for machine '$MACHINE' -> $ENDPOINT (backup: $SETTINGS.sessionnotch.bak)"
