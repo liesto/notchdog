@@ -95,21 +95,18 @@ struct NotchContentView: View {
                         }
                     }
                 }
-                // Row 1 starts right at the cutout bottom (y = notch height); the black
-                // above it IS the notch. Never narrower than the notch so the black top
-                // matches the cutout width. Trailing room reserved for the "x".
-                .padding(.top, topInset)
+                // Top-aligned: row 1 at menu-bar level (top of the notch), NOT below the
+                // cutout — the ~notch-height top inset is removed. Centered over the notch;
+                // the cutout blends into the black. Grows left/right (centered) and down.
+                .padding(.top, 4)
                 .padding(.leading, 14)
                 .padding(.trailing, 30)
                 .padding(.bottom, 9)
                 .frame(minWidth: notchWidth, alignment: .leading)
                 .fixedSize(horizontal: true, vertical: false)
-                // Custom notch shape: a notch-width strip over the cutout that flares to
-                // full content width only BELOW the cutout — the top band never covers a
-                // menu item at any label length, and the body drops clean below.
-                .background(NotchShape(notchWidth: notchWidth, stripHeight: topInset).fill(Color.black))
+                .background(Color.black)
                 .overlay(alignment: .topTrailing) {
-                    // "x" to clear all alerts — in the body (below the strip), top-right.
+                    // "x" to clear all alerts — top-right, only while alerts show.
                     Button { store.clearAll() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 10, weight: .bold))
@@ -118,10 +115,12 @@ struct NotchContentView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, topInset + 2)
+                    .padding(.top, 4)
                     .padding(.trailing, 8)
                 }
-                .clipShape(NotchShape(notchWidth: notchWidth, stripHeight: topInset))
+                // Black rounded shape, top edge at the screen top (square top), rounded bottom.
+                .clipShape(.rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
+                                 bottomTrailingRadius: 18, topTrailingRadius: 0))
             }
         }
     }
@@ -133,36 +132,5 @@ struct NotchContentView: View {
         case .done: return .blue
         case .working: return .gray
         }
-    }
-}
-
-// The notch made to "extend downward": a strip exactly the notch width in the top
-// `stripHeight` band (it sits over the cutout, so it's invisible and covers nothing at
-// menu-bar level), flaring out to the full content width only BELOW the cutout, with
-// rounded bottom corners. Content is centered, so the flare is symmetric.
-struct NotchShape: Shape {
-    var notchWidth: CGFloat
-    var stripHeight: CGFloat
-    var bottomRadius: CGFloat = 18
-
-    func path(in rect: CGRect) -> Path {
-        let w = rect.width, h = rect.height
-        let sx0 = (w - notchWidth) / 2          // strip left edge
-        let sx1 = (w + notchWidth) / 2          // strip right edge
-        let sh = min(stripHeight, h)            // strip band height
-        let r = max(0, min(bottomRadius, (h - sh) / 2, w / 2))
-        var p = Path()
-        p.move(to: CGPoint(x: sx0, y: 0))               // strip top-left
-        p.addLine(to: CGPoint(x: sx1, y: 0))            // strip top-right
-        p.addLine(to: CGPoint(x: sx1, y: sh))           // down to body top (right of strip)
-        p.addLine(to: CGPoint(x: w, y: sh))             // body top-right corner (square)
-        p.addLine(to: CGPoint(x: w, y: h - r))          // body right edge
-        p.addQuadCurve(to: CGPoint(x: w - r, y: h), control: CGPoint(x: w, y: h))
-        p.addLine(to: CGPoint(x: r, y: h))              // bottom edge
-        p.addQuadCurve(to: CGPoint(x: 0, y: h - r), control: CGPoint(x: 0, y: h))
-        p.addLine(to: CGPoint(x: 0, y: sh))             // body left edge up
-        p.addLine(to: CGPoint(x: sx0, y: sh))           // body top-left to strip
-        p.closeSubpath()                                // strip left edge up to start
-        return p
     }
 }
