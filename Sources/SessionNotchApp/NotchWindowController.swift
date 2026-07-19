@@ -90,9 +90,9 @@ struct NotchContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                // One message: top-align (sits in the notch band). Multiple: push
-                // the stack below the notch so rows don't collide with the cutout.
-                .padding(.top, store.sessions.count > 1 ? topInset + 6 : 6)
+                // Content sits below the physical notch cutout (nothing can render in
+                // the camera hole); the black above it covers the menu bar = "the notch".
+                .padding(.top, topInset + 6)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 10)
                 .frame(minWidth: notchWidth)
@@ -120,7 +120,7 @@ struct NotchContentView: View {
 
     private func color(for s: SessionState) -> Color {
         switch s {
-        case .waitingPermission, .idleInput: return .yellow
+        case .waitingPermission, .idleInput: return Color(red: 1.0, green: 0.88, blue: 0.1)
         case .error: return .red
         case .done: return .blue
         case .working: return .gray
