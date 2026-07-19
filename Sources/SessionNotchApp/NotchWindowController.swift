@@ -54,15 +54,19 @@ final class NotchWindowController {
         let (notchH, notchW) = notchMetrics(screen)
         hosting.rootView = NotchContentView(store: store, topInset: notchH, notchWidth: notchW)
         hosting.layoutSubtreeIfNeeded()
-        // Idle: collapse to exactly the notch (never taller than the notch height).
-        // Alert: size to content, dropping below the notch.
-        let empty = store.sessions.isEmpty
         let fit = hosting.fittingSize
-        let w = empty ? notchW : max(fit.width, notchW)
-        let h = empty ? notchH : fit.height
-        let x = screen.frame.midX - w / 2
-        let y = screen.frame.maxY - h   // top edge at the very top -> extends the notch downward
-        panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
+        if store.sessions.isEmpty {
+            // Idle: collapse to exactly the notch, centered — no drop-down.
+            let x = screen.frame.midX - notchW / 2
+            panel.setFrame(NSRect(x: x, y: screen.frame.maxY - notchH,
+                                  width: notchW, height: notchH), display: true)
+        } else {
+            // Alert: sit just RIGHT of the cutout with the top at the very top, so
+            // row 1 lands at menu-bar level (inline with Window/Help) — kills the gap.
+            let x = screen.frame.midX + notchW / 2
+            panel.setFrame(NSRect(x: x, y: screen.frame.maxY - fit.height,
+                                  width: fit.width, height: fit.height), display: true)
+        }
         panel.orderFrontRegardless()
     }
 }
@@ -89,14 +93,14 @@ struct NotchContentView: View {
                         }
                     }
                 }
-                // Content sits below the physical notch cutout (nothing can render in
-                // the camera hole); the black above it covers the menu bar = "the notch".
-                // Tight: hug content width, with trailing room reserved for the "x".
-                .padding(.top, topInset + 5)
-                .padding(.leading, 14)
+                // Sits just right of the cutout at menu-bar level; row 1 aligns with the
+                // menu bar (Window/Help), no empty band above. Tight: hug content width,
+                // trailing room reserved for the "x".
+                .padding(.top, 5)
+                .padding(.leading, 12)
                 .padding(.trailing, 30)
                 .padding(.bottom, 9)
-                .frame(minWidth: notchWidth, alignment: .leading)
+                .fixedSize(horizontal: true, vertical: false)
                 .background(Color.black)
                 .overlay(alignment: .topTrailing) {
                     // "x" to clear all alerts — only present while alerts show.
