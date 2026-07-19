@@ -37,15 +37,16 @@ final class NotchWindowController {
         panel.orderFrontRegardless()
     }
 
-    // Size the panel to its SwiftUI content and pin it to the top-center (under the notch).
+    // Size the panel to its SwiftUI content and hang it just below the notch, centered.
     private func reflow() {
         hosting.layoutSubtreeIfNeeded()
         let fit = hosting.fittingSize
-        let w = max(fit.width, 240)
-        let h = max(fit.height, 36)
+        let w = fit.width
+        let h = fit.height
         guard let screen = NSScreen.main else { return }
+        let notchH = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 24
         let x = screen.frame.midX - w / 2
-        let y = screen.frame.maxY - h          // top edge at the very top -> hangs from the notch
+        let y = screen.frame.maxY - notchH - h   // hang just below the notch / menu bar
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
         panel.orderFrontRegardless()
     }
@@ -57,10 +58,10 @@ struct NotchContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if store.sessions.isEmpty {
-                HStack(spacing: 8) {
-                    Circle().fill(Color.green).frame(width: 7, height: 7)
-                    Text("notchdog — all clear")
-                        .font(.system(size: 12, weight: .medium))
+                HStack(spacing: 6) {
+                    Circle().fill(Color.green).frame(width: 6, height: 6)
+                    Text("notchdog")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.85))
                 }
             } else {
@@ -80,9 +81,9 @@ struct NotchContentView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(minWidth: 240, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .fixedSize()
         .background(Color.black.opacity(0.92))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
