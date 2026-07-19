@@ -24,7 +24,7 @@ final class NotchWindowController {
         panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        panel.hasShadow = true
+        panel.hasShadow = false   // no shadow/border rim; top must go pure black
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.contentView = hosting
@@ -90,7 +90,9 @@ struct NotchContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(.top, topInset + 6)     // push content below the physical notch
+                // One message: top-align (sits in the notch band). Multiple: push
+                // the stack below the notch so rows don't collide with the cutout.
+                .padding(.top, store.sessions.count > 1 ? topInset + 6 : 6)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 10)
                 .frame(minWidth: notchWidth)
@@ -105,8 +107,8 @@ struct NotchContentView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, topInset + 2)
-                    .padding(.trailing, 6)
+                    .padding(.top, 6)
+                    .padding(.trailing, 8)
                 }
             }
         }
@@ -118,8 +120,8 @@ struct NotchContentView: View {
 
     private func color(for s: SessionState) -> Color {
         switch s {
-        case .waitingPermission, .error: return .red
-        case .idleInput: return .yellow
+        case .waitingPermission, .idleInput: return .yellow
+        case .error: return .red
         case .done: return .blue
         case .working: return .gray
         }
