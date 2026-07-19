@@ -3,18 +3,20 @@ import SwiftUI
 import Combine
 import SessionNotchCore
 
-// A borderless panel that hangs from the top-center of the screen (the notch),
-// dropping down to show sessions that need attention — Dynamic Island style.
-// Plain AppKit so it builds anywhere Swift builds (no notch-UI dependency).
+// A borderless panel aligned to the notch: its black top blends into the physical
+// notch, and content renders BELOW the notch line (in visible screen space), so it
+// reads as content dropping out of the notch — Dynamic Island style. Plain AppKit.
 @MainActor
 final class NotchWindowController {
     private let panel: NSPanel
     private let hosting: NSHostingView<NotchContentView>
+    private let store: RegistryStore
     private var cancellables = Set<AnyCancellable>()
 
     init(store: RegistryStore) {
-        hosting = NSHostingView(rootView: NotchContentView(store: store))
-        panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 360, height: 44),
+        self.store = store
+        hosting = NSHostingView(rootView: NotchContentView(store: store, topInset: 37, notchWidth: 156))
+        panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 156, height: 60),
                         styleMask: [.borderless, .nonactivatingPanel],
                         backing: .buffered, defer: false)
         panel.isFloatingPanel = true
@@ -37,17 +39,25 @@ final class NotchWindowController {
         panel.orderFrontRegardless()
     }
 
-    // Size the panel to its SwiftUI content and hang it just BELOW the menu bar /
-    // notch, centered, so it's fully visible (never clipped by the notch cutout).
-    // visibleFrame excludes the menu bar row (the notch's height on notched Macs).
+    // Measured notch geometry (points), with a 74x312px (=37x156pt) fallback.
+    private func notchMetrics(_ screen: NSScreen) -> (height: CGFloat, width: CGFloat) {
+        let h = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 37
+        let auxL = screen.auxiliaryTopLeftArea?.width ?? 0
+        let auxR = screen.auxiliaryTopRightArea?.width ?? 0
+        let w = (auxL > 0 && auxR > 0) ? (screen.frame.width - auxL - auxR) : 156
+        return (h, w)
+    }
+
     private func reflow() {
+        guard let screen = NSScreen.main else { return }
+        let (notchH, notchW) = notchMetrics(screen)
+        hosting.rootView = NotchContentView(store: store, topInset: notchH, notchWidth: notchW)
         hosting.layoutSubtreeIfNeeded()
         let fit = hosting.fittingSize
-        let w = fit.width
+        let w = max(fit.width, notchW)
         let h = fit.height
-        guard let screen = NSScreen.main else { return }
         let x = screen.frame.midX - w / 2
-        let y = screen.visibleFrame.maxY - h - 4   // 4pt gap below the menu bar/notch
+        let y = screen.frame.maxY - h   // top edge at the very top -> extends the notch downward
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
         panel.orderFrontRegardless()
     }
@@ -55,16 +65,13 @@ final class NotchWindowController {
 
 struct NotchContentView: View {
     @ObservedObject var store: RegistryStore
+    var topInset: CGFloat = 37       // physical notch height; content sits below this
+    var notchWidth: CGFloat = 156
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .center, spacing: 6) {
             if store.sessions.isEmpty {
-                HStack(spacing: 6) {
-                    Circle().fill(Color.green).frame(width: 6, height: 6)
-                    Text("notchdog")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
+                Circle().fill(Color.green).frame(width: 6, height: 6)
             } else {
                 ForEach(store.sessions) { s in
                     HStack(spacing: 9) {
@@ -78,18 +85,20 @@ struct NotchContentView: View {
                                 .foregroundStyle(.white.opacity(0.6))
                                 .lineLimit(1)
                         }
+                        Spacer(minLength: 0)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .fixedSize()
-        .background(Color.black.opacity(0.92))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        .padding(.top, topInset + 6)     // push content below the physical notch
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
+        .frame(minWidth: notchWidth)
+        .background(Color.black)
+        .clipShape(
+            .rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
+                  bottomTrailingRadius: 18, topTrailingRadius: 0)
         )
     }
 
