@@ -25,16 +25,18 @@ hook() { printf '{"matcher":"","hooks":[{"type":"command","command":"%s"}]}' "$1
 NOTIFY=$(hook "$HOOKS_DIR/sessionnotch-notify.sh")
 STOP=$(hook "$HOOKS_DIR/sessionnotch-stop.sh")
 PROMPT=$(hook "$HOOKS_DIR/sessionnotch-prompt.sh")
+PRETOOL=$(hook "$HOOKS_DIR/sessionnotch-pretool.sh")
 END=$(hook "$HOOKS_DIR/sessionnotch-end.sh")
 
 # Idempotent: strip any existing entries whose command references a
 # sessionnotch hook script before appending the fresh one, so re-running this
 # script (e.g. to pick up a new endpoint) never duplicates entries/POSTs.
-jq --argjson n "$NOTIFY" --argjson s "$STOP" --argjson p "$PROMPT" --argjson e "$END" '
-  def strip($arr): [ ($arr // [])[] | select((.hooks // []) | any(.command | test("sessionnotch")) | not) ];
+jq --argjson n "$NOTIFY" --argjson s "$STOP" --argjson p "$PROMPT" --argjson pt "$PRETOOL" --argjson e "$END" '
+  def strip($arr): [ ($arr // [])[] | select((.hooks // []) | any((.command // "") | test("sessionnotch")) | not) ];
   .hooks.Notification = (strip(.hooks.Notification) + [$n]) |
   .hooks.Stop = (strip(.hooks.Stop) + [$s]) |
   .hooks.UserPromptSubmit = (strip(.hooks.UserPromptSubmit) + [$p]) |
+  .hooks.PreToolUse = (strip(.hooks.PreToolUse) + [$pt]) |
   .hooks.SessionEnd = (strip(.hooks.SessionEnd) + [$e])
 ' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
 echo "Installed hooks for machine '$MACHINE' -> $ENDPOINT (backup: $SETTINGS.sessionnotch.bak)"

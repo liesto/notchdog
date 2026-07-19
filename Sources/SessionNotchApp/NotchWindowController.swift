@@ -53,9 +53,12 @@ final class NotchWindowController {
         let (notchH, notchW) = notchMetrics(screen)
         hosting.rootView = NotchContentView(store: store, topInset: notchH, notchWidth: notchW)
         hosting.layoutSubtreeIfNeeded()
+        // Idle: collapse to exactly the notch (never taller than the notch height).
+        // Alert: size to content, dropping below the notch.
+        let empty = store.sessions.isEmpty
         let fit = hosting.fittingSize
-        let w = max(fit.width, notchW)
-        let h = fit.height
+        let w = empty ? notchW : max(fit.width, notchW)
+        let h = empty ? notchH : fit.height
         let x = screen.frame.midX - w / 2
         let y = screen.frame.maxY - h   // top edge at the very top -> extends the notch downward
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
@@ -69,33 +72,36 @@ struct NotchContentView: View {
     var notchWidth: CGFloat = 156
 
     var body: some View {
-        VStack(alignment: .center, spacing: 6) {
+        Group {
             if store.sessions.isEmpty {
-                Circle().fill(Color.green).frame(width: 6, height: 6)
+                // Idle: just the notch (black, blends in) — no drop-down.
+                Color.black
             } else {
-                ForEach(store.sessions) { s in
-                    HStack(spacing: 9) {
-                        Circle().fill(color(for: s.state)).frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("\(s.machine) · \(s.project)")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(.white)
-                            Text(s.message ?? label(for: s.state))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .lineLimit(1)
+                VStack(alignment: .center, spacing: 6) {
+                    ForEach(store.sessions) { s in
+                        HStack(spacing: 9) {
+                            Circle().fill(color(for: s.state)).frame(width: 8, height: 8)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("\(s.machine) · \(s.project)")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                Text(s.message ?? label(for: s.state))
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 0)
                         }
-                        Spacer(minLength: 0)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .padding(.top, topInset + 6)     // push content below the physical notch
+                .padding(.horizontal, 14)
+                .padding(.bottom, 10)
+                .frame(minWidth: notchWidth)
+                .background(Color.black)
             }
         }
-        .padding(.top, topInset + 6)     // push content below the physical notch
-        .padding(.horizontal, 14)
-        .padding(.bottom, 10)
-        .frame(minWidth: notchWidth)
-        .background(Color.black)
         .clipShape(
             .rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
                   bottomTrailingRadius: 18, topTrailingRadius: 0)
