@@ -37,16 +37,17 @@ final class NotchWindowController {
         panel.orderFrontRegardless()
     }
 
-    // Size the panel to its SwiftUI content and hang it just below the notch, centered.
+    // Size the panel to its SwiftUI content and hang it just BELOW the menu bar /
+    // notch, centered, so it's fully visible (never clipped by the notch cutout).
+    // visibleFrame excludes the menu bar row (the notch's height on notched Macs).
     private func reflow() {
         hosting.layoutSubtreeIfNeeded()
         let fit = hosting.fittingSize
         let w = fit.width
         let h = fit.height
         guard let screen = NSScreen.main else { return }
-        let notchH = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 24
         let x = screen.frame.midX - w / 2
-        let y = screen.frame.maxY - notchH - h   // hang just below the notch / menu bar
+        let y = screen.visibleFrame.maxY - h - 4   // 4pt gap below the menu bar/notch
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
         panel.orderFrontRegardless()
     }
