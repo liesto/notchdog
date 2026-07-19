@@ -95,10 +95,10 @@ struct NotchContentView: View {
                         }
                     }
                 }
-                // Top-aligned: row 1 at menu-bar level (top of the notch), NOT below the
-                // cutout — the ~notch-height top inset is removed. Centered over the notch;
-                // the cutout blends into the black. Grows left/right (centered) and down.
-                .padding(.top, 4)
+                // Row 1 sits JUST BELOW the physical notch cutout (the black 0…notchH band
+                // above it blends into the notch), so nothing is ever hidden by the camera
+                // housing. Centered over the notch; grows left/right (centered) and down.
+                .padding(.top, topInset + 5)
                 .padding(.leading, 14)
                 .padding(.trailing, 30)
                 .padding(.bottom, 9)
@@ -115,7 +115,7 @@ struct NotchContentView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 4)
+                    .padding(.top, topInset + 2)
                     .padding(.trailing, 8)
                 }
                 // Black rounded shape, top edge at the screen top (square top), rounded bottom.
