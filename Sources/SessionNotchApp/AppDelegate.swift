@@ -6,12 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var store: RegistryStore!
     private var server: EventServer!
     private var statusController: StatusItemController!
-    private var mainWindow: MainWindowController!
+    private var notchWindow: NotchWindowController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // .regular so the floating window reliably shows and can be focused;
-        // the app is still primarily driven from the menu-bar item.
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory) // notch/menu-bar app, no Dock icon
         Notifier.requestAuthorization()
 
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -20,8 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store = RegistryStore()
         store.onNewAttention = { Notifier.notify($0) }
         statusController = StatusItemController(store: store)
-        mainWindow = MainWindowController(store: store)
-        mainWindow.show()
+        notchWindow = NotchWindowController(store: store)
+        notchWindow.show()
 
         guard let secret = try? Secret.loadOrCreate(at: dir.appendingPathComponent("secret")),
               !secret.isEmpty else {
