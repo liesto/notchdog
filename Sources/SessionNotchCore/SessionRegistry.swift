@@ -46,6 +46,13 @@ public final class SessionRegistry {
         return s
     }
 
+    /// Manually clear every tracked session (e.g. the notch "x" button).
+    public func clearAll() {
+        guard !sessions.isEmpty else { return }
+        sessions.removeAll()
+        onChange?()
+    }
+
     public func expireStale(now: Date) {
         let cutoff = now.addingTimeInterval(-staleAfter)
         let before = sessions.count

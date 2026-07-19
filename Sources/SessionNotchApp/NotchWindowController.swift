@@ -20,7 +20,8 @@ final class NotchWindowController {
                         styleMask: [.borderless, .nonactivatingPanel],
                         backing: .buffered, defer: false)
         panel.isFloatingPanel = true
-        panel.level = .statusBar
+        // Above the menu bar so the black top covers it and blends into the screen edge.
+        panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
@@ -77,19 +78,13 @@ struct NotchContentView: View {
                 // Idle: just the notch (black, blends in) — no drop-down.
                 Color.black
             } else {
-                VStack(alignment: .center, spacing: 6) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(store.sessions) { s in
                         HStack(spacing: 9) {
                             Circle().fill(color(for: s.state)).frame(width: 8, height: 8)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("\(s.machine) · \(s.project)")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.white)
-                                Text(s.message ?? label(for: s.state))
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.white.opacity(0.6))
-                                    .lineLimit(1)
-                            }
+                            Text("\(s.machine) · \(s.project)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
                             Spacer(minLength: 0)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,6 +95,19 @@ struct NotchContentView: View {
                 .padding(.bottom, 10)
                 .frame(minWidth: notchWidth)
                 .background(Color.black)
+                .overlay(alignment: .topTrailing) {
+                    // "x" to clear all alerts — only present while alerts show.
+                    Button { store.clearAll() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .padding(5)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, topInset + 2)
+                    .padding(.trailing, 6)
+                }
             }
         }
         .clipShape(
@@ -114,15 +122,6 @@ struct NotchContentView: View {
         case .idleInput: return .yellow
         case .done: return .blue
         case .working: return .gray
-        }
-    }
-    private func label(for s: SessionState) -> String {
-        switch s {
-        case .waitingPermission: return "waiting for permission"
-        case .idleInput: return "waiting for input"
-        case .done: return "finished"
-        case .error: return "errored"
-        case .working: return "working"
         }
     }
 }

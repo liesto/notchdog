@@ -21,5 +21,6 @@ public final class RegistryStore: ObservableObject {
     }
 
     public func apply(_ event: Event) { registry.apply(event) }
+    public func clearAll() { registry.clearAll() }
     private func refresh() { sessions = registry.needingAttention }
 }
