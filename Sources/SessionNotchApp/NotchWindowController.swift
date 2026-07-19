@@ -78,24 +78,25 @@ struct NotchContentView: View {
                 // Idle: just the notch (black, blends in) — no drop-down.
                 Color.black
             } else {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     ForEach(store.sessions) { s in
-                        HStack(spacing: 9) {
-                            Circle().fill(color(for: s.state)).frame(width: 8, height: 8)
+                        HStack(spacing: 8) {
+                            Circle().fill(color(for: s.state)).frame(width: 7, height: 7)
                             Text("\(s.machine) · \(s.project)")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12.5, weight: .semibold))
                                 .foregroundStyle(.white)
-                            Spacer(minLength: 0)
+                                .fixedSize()          // hug the text; never stretch
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 // Content sits below the physical notch cutout (nothing can render in
                 // the camera hole); the black above it covers the menu bar = "the notch".
-                .padding(.top, topInset + 6)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
-                .frame(minWidth: notchWidth)
+                // Tight: hug content width, with trailing room reserved for the "x".
+                .padding(.top, topInset + 5)
+                .padding(.leading, 14)
+                .padding(.trailing, 30)
+                .padding(.bottom, 9)
+                .frame(minWidth: notchWidth, alignment: .leading)
                 .background(Color.black)
                 .overlay(alignment: .topTrailing) {
                     // "x" to clear all alerts — only present while alerts show.
