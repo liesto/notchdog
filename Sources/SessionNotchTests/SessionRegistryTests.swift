@@ -23,6 +23,16 @@ func registerSessionRegistryTests(_ runner: TestRunner) async {
         try expect(r.needingAttention.isEmpty)
     }
 
+    runner.test("SessionRegistry.doneClearsAttention") {
+        // A resolved session (Stop hook -> done) must drop off the notch immediately,
+        // not linger as a blue alert until stale/sessionEnd.
+        let r = SessionRegistry()
+        r.apply(ev(.waitingPermission, at: 0))
+        try expectEqual(r.needingAttention.count, 1)
+        r.apply(ev(.done, at: 1))
+        try expect(r.needingAttention.isEmpty)
+    }
+
     runner.test("SessionRegistry.sessionEndRemovesSession") {
         let r = SessionRegistry()
         r.apply(ev(.done, at: 0))
