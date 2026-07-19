@@ -49,19 +49,10 @@ final class NotchWindowController {
         return (h, w)
     }
 
-    // Measured on jbw2026: the system status cluster (battery · wifi · spotlight ·
-    // control-center · date) starts ~x=990pt. The alert's right edge caps just before
-    // it so those are never covered; it may cover the third-party extras between the
-    // notch and here, and long names tail-truncate. Retune if the menu bar changes.
-    private let systemClusterLeftX: CGFloat = 940
-
     private func reflow() {
         guard let screen = NSScreen.main else { return }
         let (notchH, notchW) = notchMetrics(screen)
-        let notchRightX = screen.frame.midX + notchW / 2           // alert anchors here
-        let maxAlertWidth = max(notchW, systemClusterLeftX - notchRightX)
-        hosting.rootView = NotchContentView(store: store, topInset: notchH,
-                                            notchWidth: notchW, maxRowWidth: maxAlertWidth - 59)
+        hosting.rootView = NotchContentView(store: store, topInset: notchH, notchWidth: notchW)
         hosting.layoutSubtreeIfNeeded()
         let fit = hosting.fittingSize
         if store.sessions.isEmpty {
@@ -70,12 +61,12 @@ final class NotchWindowController {
             panel.setFrame(NSRect(x: x, y: screen.frame.maxY - notchH,
                                   width: notchW, height: notchH), display: true)
         } else {
-            // Alert: inline with the menu bar, anchored just right of the notch. Top at
-            // the very top so row 1 sits at the Window/Help level. Width capped before
-            // the system cluster; long names truncate with "…".
-            let w = min(fit.width, maxAlertWidth)
-            panel.setFrame(NSRect(x: notchRightX, y: screen.frame.maxY - fit.height,
-                                  width: w, height: fit.height), display: true)
+            // Alert: hang straight DOWN from the notch, centered, so the black 0…notchH
+            // band (cutout in its center) reads as the notch and row 1 starts right at
+            // the cutout bottom — no empty band. Content extends below the menu bar only.
+            let x = screen.frame.midX - fit.width / 2
+            panel.setFrame(NSRect(x: x, y: screen.frame.maxY - fit.height,
+                                  width: fit.width, height: fit.height), display: true)
         }
         panel.orderFrontRegardless()
     }
@@ -83,9 +74,8 @@ final class NotchWindowController {
 
 struct NotchContentView: View {
     @ObservedObject var store: RegistryStore
-    var topInset: CGFloat = 37       // physical notch height (idle uses it for sizing)
+    var topInset: CGFloat = 37       // physical notch height; content sits below this
     var notchWidth: CGFloat = 156
-    var maxRowWidth: CGFloat = 200   // text cap so long names truncate before the system cluster
 
     var body: some View {
         Group {
@@ -101,22 +91,25 @@ struct NotchContentView: View {
                             Text("\(s.machine) · \(s.project)")
                                 .font(.system(size: 12.5, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .truncationMode(.tail)          // "…" long names
-                                .frame(maxWidth: maxRowWidth, alignment: .leading)
+                                .fixedSize()          // hug the text; never stretch
                         }
                     }
                 }
-                // Inline: row 1 sits at menu-bar level (small top pad, not the notch
-                // height). Trailing room reserved for the "x".
-                .padding(.top, 5)
+                // Row 1 starts right at the cutout bottom (y = notch height); the black
+                // above it IS the notch. Never narrower than the notch so the black top
+                // matches the cutout width. Trailing room reserved for the "x".
+                .padding(.top, topInset)
                 .padding(.leading, 14)
                 .padding(.trailing, 30)
                 .padding(.bottom, 9)
+                .frame(minWidth: notchWidth, alignment: .leading)
                 .fixedSize(horizontal: true, vertical: false)
-                .background(Color.black)
+                // Custom notch shape: a notch-width strip over the cutout that flares to
+                // full content width only BELOW the cutout — the top band never covers a
+                // menu item at any label length, and the body drops clean below.
+                .background(NotchShape(notchWidth: notchWidth, stripHeight: topInset).fill(Color.black))
                 .overlay(alignment: .topTrailing) {
-                    // "x" to clear all alerts — top-right, only while alerts show.
+                    // "x" to clear all alerts — in the body (below the strip), top-right.
                     Button { store.clearAll() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 10, weight: .bold))
@@ -125,12 +118,10 @@ struct NotchContentView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 6)
+                    .padding(.top, topInset + 2)
                     .padding(.trailing, 8)
                 }
-                // Beside-the-notch tab: square top (butts the screen top), rounded bottom.
-                .clipShape(.rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
-                                 bottomTrailingRadius: 18, topTrailingRadius: 0))
+                .clipShape(NotchShape(notchWidth: notchWidth, stripHeight: topInset))
             }
         }
     }
@@ -142,5 +133,36 @@ struct NotchContentView: View {
         case .done: return .blue
         case .working: return .gray
         }
+    }
+}
+
+// The notch made to "extend downward": a strip exactly the notch width in the top
+// `stripHeight` band (it sits over the cutout, so it's invisible and covers nothing at
+// menu-bar level), flaring out to the full content width only BELOW the cutout, with
+// rounded bottom corners. Content is centered, so the flare is symmetric.
+struct NotchShape: Shape {
+    var notchWidth: CGFloat
+    var stripHeight: CGFloat
+    var bottomRadius: CGFloat = 18
+
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width, h = rect.height
+        let sx0 = (w - notchWidth) / 2          // strip left edge
+        let sx1 = (w + notchWidth) / 2          // strip right edge
+        let sh = min(stripHeight, h)            // strip band height
+        let r = max(0, min(bottomRadius, (h - sh) / 2, w / 2))
+        var p = Path()
+        p.move(to: CGPoint(x: sx0, y: 0))               // strip top-left
+        p.addLine(to: CGPoint(x: sx1, y: 0))            // strip top-right
+        p.addLine(to: CGPoint(x: sx1, y: sh))           // down to body top (right of strip)
+        p.addLine(to: CGPoint(x: w, y: sh))             // body top-right corner (square)
+        p.addLine(to: CGPoint(x: w, y: h - r))          // body right edge
+        p.addQuadCurve(to: CGPoint(x: w - r, y: h), control: CGPoint(x: w, y: h))
+        p.addLine(to: CGPoint(x: r, y: h))              // bottom edge
+        p.addQuadCurve(to: CGPoint(x: 0, y: h - r), control: CGPoint(x: 0, y: h))
+        p.addLine(to: CGPoint(x: 0, y: sh))             // body left edge up
+        p.addLine(to: CGPoint(x: sx0, y: sh))           // body top-left to strip
+        p.closeSubpath()                                // strip left edge up to start
+        return p
     }
 }
