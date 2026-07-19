@@ -61,9 +61,10 @@ final class NotchWindowController {
             panel.setFrame(NSRect(x: x, y: screen.frame.maxY - notchH,
                                   width: notchW, height: notchH), display: true)
         } else {
-            // Alert: sit just RIGHT of the cutout with the top at the very top, so
-            // row 1 lands at menu-bar level (inline with Window/Help) — kills the gap.
-            let x = screen.frame.midX + notchW / 2
+            // Alert: hang straight DOWN from the notch, centered, so the black 0…notchH
+            // band (cutout in its center) reads as the notch and row 1 starts right at
+            // the cutout bottom — no empty band. Content extends below the menu bar only.
+            let x = screen.frame.midX - fit.width / 2
             panel.setFrame(NSRect(x: x, y: screen.frame.maxY - fit.height,
                                   width: fit.width, height: fit.height), display: true)
         }
@@ -93,13 +94,14 @@ struct NotchContentView: View {
                         }
                     }
                 }
-                // Sits just right of the cutout at menu-bar level; row 1 aligns with the
-                // menu bar (Window/Help), no empty band above. Tight: hug content width,
-                // trailing room reserved for the "x".
-                .padding(.top, 5)
-                .padding(.leading, 12)
+                // Row 1 starts right at the cutout bottom (y = notch height); the black
+                // above it IS the notch. Never narrower than the notch so the black top
+                // matches the cutout width. Trailing room reserved for the "x".
+                .padding(.top, topInset)
+                .padding(.leading, 14)
                 .padding(.trailing, 30)
                 .padding(.bottom, 9)
+                .frame(minWidth: notchWidth, alignment: .leading)
                 .fixedSize(horizontal: true, vertical: false)
                 .background(Color.black)
                 .overlay(alignment: .topTrailing) {
