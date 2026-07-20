@@ -45,7 +45,7 @@ func registerSessionRegistryTests(_ runner: TestRunner) async {
         var fired = 0
         r.onNewAttention = { _ in fired += 1 }
         r.apply(ev(.waitingPermission, at: 0)) // enter attention -> fire
-        r.apply(ev(.done, at: 1))              // still attention -> no fire
+        r.apply(ev(.done, at: 1))              // done is not attention -> no fire (drops off)
         r.apply(ev(.working, at: 2))           // clear
         r.apply(ev(.idle, at: 3))               // re-enter -> fire
         try expectEqual(fired, 2)
