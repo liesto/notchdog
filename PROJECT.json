@@ -4,18 +4,24 @@
   "group": "Personal",
   "stage": "completed",
   "repository": "https://github.com/liesto/notchdog",
-  "tags": ["macos", "swift", "claude-code", "tooling"],
+  "tags": [
+    "macos",
+    "swift",
+    "claude-code",
+    "tooling"
+  ],
   "completed": [
     "Core library (Event, SessionRegistry, HTTP parser, Config/Secret/Tailscale, NWListener EventServer) built + tested (28 tests)",
     "Bash Claude Code hook client (Notification/Stop/UserPromptSubmit/PreToolUse/SessionEnd) + idempotent install script + tests",
     "Notch UI: centered island dropping from the notch, content below the camera cutout (never occluded), yellow/red dots, clear-all x, idle collapses to just the notch",
     "Running live on the laptop; Studio + laptop hooks enabled (both machines' Claude sessions drive the notch); auto-start LaunchAgent",
-    "Built via Studio+Laptop Claude coordination over Linear BUI-222; both agents co-signed; James approved on real screen"
+    "Built via Studio+Laptop Claude coordination over Linear BUI-222; both agents co-signed; James approved on real screen",
+    "Moved under ~/Agent/Bonfire/ (2026-07-20) to keep the ~/Agent top level clean; the 5 Claude Code hook paths in ~/.claude/settings.json were repointed to Bonfire/SessionNotch/hooks/ and the stop hook re-verified (posts to laptop notch over Tailscale)"
   ],
   "next": [
     "Optional: make 'done' (finished-turn) alerts auto-clear so they don't linger",
     "Follow-ups: sub-second ts, 400 on malformed HTTP, EventServer empty-secret guard in the server itself",
     "v2: claude wrapper for true crash detection; jump-to-session"
   ],
-  "updatedAt": "2026-07-19"
+  "updatedAt": "2026-07-20"
 }
